@@ -1,0 +1,158 @@
+#include <iostream>
+#include <climits>
+using namespace std;
+const int inf = INT_MAX;
+
+
+int** create(int n) {
+    int** mat = new int* [n];
+    for (int i = 0; i < n; i++) {
+        mat[i] = new int[n];
+    }
+    return mat;
+}
+
+void del(int** mat, int n) {
+    for (int i = 0; i < n; i++) {
+        delete[] mat[i];
+    }
+    delete[] mat;
+}
+
+void ini(int** gra, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (i == j)  (gra[i][j] = 0);
+            else
+                gra[i][j] = inf;
+        }
+    }
+}
+
+int min(int a1, int a2) {
+    if (a2 > a1)
+        return a1;
+    else
+        return a2;
+}
+
+void print(int** mat, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (mat[i][j] == inf)
+                cout << "inf\t";
+            else
+                cout << mat[i][j] << "\t";
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
+//void floyd(int** gra, int n) {
+//    int** dist = create(n); //копия графа для хранения расстояний
+//    //скопирум граф
+//    for (int i = 0; i < n; i++) {
+//        for (int j = 0; j < n; j++) {
+//            dist[i][j] = gra[i][j];
+//        }
+//    }
+//
+//    for (int k = 0; k < n; k++) {
+//        for (int i = 0; i < n; i++) {
+//            for (int j = 0; j < n; j++) {
+//                if (dist[i][k] != inf && dist[k][j] != inf) {
+//                    int newdist = min(dist[i][k] + dist[k][j], dist[i][j]);
+//                    dist[i][j] = min(newdist, dist[i][j]);
+//                }
+//            }
+//        }
+//    }
+//    print(dist,n);
+//    del(dist, n);
+//}
+//
+//
+//int main() {
+//    //граф с 4 вершинами
+//    int n1 = 4;
+//    int** gr1 = create(n1);
+//    ini(gr1, n1);
+//
+//    gr1[0][1] = 5;
+//    gr1[0][2] = 10;
+//    gr1[1][2] = 3;
+//    gr1[1][3] = 8;
+//    gr1[2][3] = 1;
+//
+//    floyd(gr1, n1);
+//    del(gr1, n1);
+//
+//}
+void dei(int** graph, int start, int n) {
+    int* dist = new int[n];
+    bool* vis = new bool[n];
+
+    for (int i = 0; i < n; i++) {
+        dist[i] = inf;
+        vis[i] = false;
+    }
+    dist[start] = 0;
+
+    for (int c = 0; c < n; c++) {
+        //вершина с минимальным расстоянием
+        int mindist = inf;
+        int u = -1;
+
+        for (int v = 0; v < n; v++) {
+            if (!vis[v] && dist[v] < mindist) {
+                mindist = dist[v];
+                u = v;
+            }
+        }
+
+        if (u == -1 || mindist == inf) break;
+
+        vis[u] = true;
+
+
+        for (int v = 0; v < n; v++) {
+            if (!vis[v] && graph[u][v] != inf && dist[u] != inf) {
+                int newDist = dist[u] + graph[u][v];
+                if (newDist < dist[v]) {
+                    dist[v] = newDist;
+                }
+            }
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        cout << "До " << i << ": ";
+        if (dist[i] == inf) cout << "inf\t";
+        else cout << dist[i] << "\t";
+    }
+
+    delete[] dist;
+    delete[] vis;
+}
+
+int main() {
+    // Создаем граф с 5 вершинами
+    int n = 5;
+    int** graph = create(n);
+    ini(graph, n);
+
+    graph[0][1] = graph[1][0] = 10;
+    graph[0][4] = graph[4][0] = 5;
+    graph[1][2] = graph[2][1] = 1;
+    graph[1][4] = graph[4][1] = 2;
+    graph[2][3] = graph[3][2] = 4;
+    graph[3][4] = graph[4][3] = 6;
+
+
+    cout << "Матрица смежности графа:\n";
+    print(graph, n);
+
+    dei(graph, 0, n);
+
+    del(graph, n);
+}
