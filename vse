@@ -1,0 +1,259 @@
+#include <iostream>
+#include <climits>
+
+using namespace std;
+
+const int inf = INT_MAX;
+
+
+int** create(int n) {
+    int** mat = new int* [n];
+    for (int i = 0; i < n; i++) {
+        mat[i] = new int[n];
+    }
+    return mat;
+}
+
+void del(int** mat, int n) {
+    for (int i = 0; i < n; i++) {
+        delete[] mat[i];
+    }
+    delete[] mat;
+}
+
+void ini(int** gra, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (i == j) gra[i][j] = 0;
+            else gra[i][j] = inf;
+        }
+    }
+}
+
+void print(int** mat, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (mat[i][j] == inf) cout << "inf\t";
+            else cout << mat[i][j] << "\t";
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
+// функция для поиска представителя множества (СНМ / DSU)
+int findSet(int i, int* parent) {
+    if (parent[i] == i)
+        return i;
+  return parent[i] = findSet(parent[i], parent); // сжатие путей
+
+  
+//флойд
+void floyd(int** gra, int n) {
+    int** dist = create(n);
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            dist[i][j] = gra[i][j];
+
+    for (int k = 0; k < n; k++) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (dist[i][k] != inf && dist[k][j] != inf) {
+                    if (dist[i][k] + dist[k][j] < dist[i][j])
+                        dist[i][j] = dist[i][k] + dist[k][j];
+                }
+            }
+        }
+    }
+    cout << "1. Результат Флойда-Уоршелла:" << endl;
+    print(dist, n);
+    del(dist, n);
+}
+
+//дейкстры
+void dei(int** graph, int start, int n) {
+    int* dist = new int[n];
+    bool* vis = new bool[n];
+    for (int i = 0; i < n; i++) { dist[i] = inf; vis[i] = false; }
+    dist[start] = 0;
+
+    for (int c = 0; c < n; c++) {
+        int mindist = inf, u = -1;
+        for (int v = 0; v < n; v++) {
+            if (!vis[v] && dist[v] < mindist) { mindist = dist[v]; u = v; }
+        }
+        if (u == -1) break;
+        vis[u] = true;
+        for (int v = 0; v < n; v++) {
+            if (!vis[v] && graph[u][v] != inf) {
+                if (dist[u] + graph[u][v] < dist[v])
+                    dist[v] = dist[u] + graph[u][v];
+            }
+        }
+    }
+    cout << "2. Дейкстра от " << start << ": ";
+    for (int i = 0; i < n; i++) cout << dist[i] << " ";
+    cout << endl;
+    delete[] dist; delete[] vis;
+}
+
+          //прима (CMT)
+void prim(int** graph, int n) {
+    int* key = new int[n];
+    bool* inMST = new bool[n];
+    for (int i = 0; i < n; i++) { key[i] = inf; inMST[i] = false; }
+    key[0] = 0;
+    int res = 0;
+
+    for (int c = 0; c < n; c++) {
+        int u = -1;
+        for (int v = 0; v < n; v++)
+            if (!inMST[v] && (u == -1 || key[v] < key[u])) u = v;
+       
+        if (key[u] == inf) break;
+        inMST[u] = true;
+        res += key[u];
+
+        for (int v = 0; v < n; v++) {
+            if (graph[u][v] != inf && !inMST[v] && graph[u][v] < key[v])
+                key[v] = graph[u][v];
+        }
+    }
+    cout << "3. Вес дерева Прима: " << res << endl;
+    delete[] key; delete[] inMST;
+}
+
+//Крускал
+void kruskal(int** graph, int n) {
+    // считаем количество ребер в матрице (только выше главной диагонали, т.к. граф неориентированный)
+    int edgeCount = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if (graph[i][j] != inf) edgeCount++;
+        }
+    }
+
+    // создаем параллельные массивы для хранения всех ребер
+    int* u_arr = new int[edgeCount];
+    int* v_arr = new int[edgeCount];
+    int* w_arr = new int[edgeCount];
+
+    int k = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if (graph[i][j] != inf) {
+                u_arr[k] = i;
+                v_arr[k] = j;
+                w_arr[k] = graph[i][j];
+                k++;
+            }
+        }
+    }
+
+    // сортировка ребер по весу
+    for (int i = 0; i < edgeCount - 1; i++) {
+        for (int j = 0; j < edgeCount - i - 1; j++) {
+            if (w_arr[j] > w_arr[j + 1]) {
+                // меняем местами во всех трех массивах синхронно
+                int tempW = w_arr[j]; w_arr[j] = w_arr[j + 1]; w_arr[j + 1] = tempW;
+                int tempU = u_arr[j]; u_arr[j] = u_arr[j + 1]; u_arr[j + 1] = tempU;
+                int tempV = v_arr[j]; v_arr[j] = v_arr[j + 1]; v_arr[j + 1] = tempV;
+            }
+        }
+    }
+
+    // 4. основной цикл крускала с использованием СНМ
+    int* parent = new int[n];
+    for (int i = 0; i < n; i++) parent[i] = i;
+
+    int mst_weight = 0;
+    int edges_in_mst = 0;
+
+    cout << "4. Ребра в минимальном остове (Крускал):" << endl;
+    for (int i = 0; i < edgeCount; i++) {
+        int rootU = findSet(u_arr[i], parent);
+        int rootV = findSet(v_arr[i], parent);
+
+        if (rootU != rootV) {
+            cout << u_arr[i] << " - " << v_arr[i] << " (вес: " << w_arr[i] << ")" << endl;
+            mst_weight += w_arr[i];
+            parent[rootU] = rootV; // Объединяем множества
+            edges_in_mst++;
+        }
+    }
+
+    cout << "Итоговый вес MST: " << mst_weight << endl << endl;
+
+    // Чистим временные массивы
+    delete[] u_arr;
+    delete[] v_arr;
+    delete[] w_arr;
+    delete[] parent;
+}
+
+//центр
+void findCenter(int** graph, int n) {
+    int** dist = create(n);
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++) dist[i][j] = graph[i][j];
+
+    for (int k = 0; k < n; k++)
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                if (dist[i][k] != inf && dist[k][j] != inf)
+                    if (dist[i][k] + dist[k][j] < dist[i][j]) dist[i][j] = dist[i][k] + dist[k][j];
+
+    int minEcc = inf, center = -1;
+    for (int i = 0; i < n; i++) {
+        int maxD = 0;
+        for (int j = 0; j < n; j++) if (dist[i][j] > maxD) maxD = dist[i][j];
+        if (maxD < minEcc) { minEcc = maxD; center = i; }
+    }
+    cout << "5. Центр графа: вершина " << center << endl;
+    del(dist, n);
+}
+
+//сильная связность
+void dfs(int u, int n, int** graph, bool* vis) {
+    vis[u] = true;
+    for (int v = 0; v < n; v++)
+        if (graph[u][v] != inf && graph[u][v] != 0 && !vis[v]) dfs(v, n, graph, vis);
+}
+
+void strong(int** graph, int n) {
+    bool isStrong = true;
+    for (int i = 0; i < n; i++) {
+        bool* vis = new bool[n];
+        for (int j = 0; j < n; j++) vis[j] = false;
+        dfs(i, n, graph, vis);
+        for (int j = 0; j < n; j++) if (!vis[j]) isStrong = false;
+        delete[] vis;
+    }
+    cout << "6. Сильная связность: " << (isStrong ? "Да" : "Нет") << endl;
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    int n = 4;
+    int** graph = create(n);
+    ini(graph, n);
+
+    graph[0][1] = graph[1][0] = 5;
+    graph[0][2] = graph[2][0] = 10;
+    graph[1][2] = graph[2][1] = 3;
+    graph[1][3] = graph[3][1] = 8;
+    graph[2][3] = graph[3][2] = 1;
+
+    cout << "Матрица графа:" << endl;
+    print(graph, n);
+
+    floyd(graph, n);
+    dei(graph, 0, n);
+    prim(graph, n);
+    kruskal(graph, n);
+    findCenter(graph, n);
+    strong(graph, n);
+
+    del(graph, n);
+    return 0;
+}
